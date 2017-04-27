@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:c="http://www.springframework.org/schema/c"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd"
+       default-init-method="initialize" default-destroy-method="destroy">
+
+    <bean class="org.springframework.context.support.PropertySourcesPlaceholderConfigurer" p:placeholderPrefix="%{"
+          p:placeholderSuffix="}" />
+
+    <bean class="net.shibboleth.ext.spring.config.IdentifiableBeanPostProcessor" />
+    <bean class="net.shibboleth.idp.profile.impl.ProfileActionBeanPostProcessor" />
+
+    <!-- Datastore beans -->
+    <alias name="%{g2f.dataStore}" alias="deviceDataStore" />
+
+    <bean id="realDataStore"
+          class="org.gtri.shibboleth.idp.g2f.authn.impl.datastores.TBDDataStore"
+          c:endPoint="%{g2f.datastore.endPoint:#{null}}"
+          c:username="%{g2f.datastore.username:#{null}}"
+          c:password="%{g2f.datastore.password:#{null}}"
+          lazy-init="true"/>
+
+
+    <!-- U2F flow beans -->
+    <bean id="initialize2ndFactor"
+          scope="prototype"
+          class="org.gtri.shibboleth.idp.g2f.authn.impl.Initialize2ndFactor" 
+          p:httpServletRequest-ref="shibboleth.HttpServletRequest" />
+
+    <bean id="validate2ndFactor"
+          scope="prototype"
+          class="org.gtri.shibboleth.idp.g2f.authn.impl.Validate2ndFactor"
+          p:httpServletRequest-ref="shibboleth.HttpServletRequest" />
+
+    <!-- Default username comes from previous c14n or session. -->
+    <bean id="org.gtri.shibboleth.idp.g2f.UsernameLookupStrategy"
+          class="net.shibboleth.idp.session.context.navigate.CanonicalUsernameLookupStrategy" />
+
+    <alias name="org.gtri.shibboleth.idp.g2f.UsernameLookupStrategy" alias="CanonicalUsernameStrategy" />
+
+</beans>

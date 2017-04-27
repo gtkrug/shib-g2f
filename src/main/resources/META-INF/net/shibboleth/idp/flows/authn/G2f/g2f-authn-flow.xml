@@ -1,0 +1,34 @@
+<flow xmlns="http://www.springframework.org/schema/webflow" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/webflow http://www.springframework.org/schema/webflow/spring-webflow.xsd"
+	parent="authn.abstract">
+
+    <!-- Display G2F authentication view -->
+    <view-state id="displayG2fForm" view="g2f">
+        <on-entry>
+            <evaluate expression="initialize2ndFactor"/>
+            <evaluate expression="environment" result="viewScope.environment" />
+            <evaluate expression="opensamlProfileRequestContext" result="viewScope.profileRequestContext" />
+            <evaluate expression="opensamlProfileRequestContext.getSubcontext(T(net.shibboleth.idp.authn.context.AuthenticationContext))"
+                      result="viewScope.authenticationContext" />
+            <evaluate expression="T(net.shibboleth.utilities.java.support.codec.HTMLEncoder)" result="viewScope.encoder" />
+            <evaluate expression="flowRequestContext.getExternalContext().getNativeRequest()" result="viewScope.request" />
+            <evaluate expression="flowRequestContext.getExternalContext().getNativeResponse()" result="viewScope.response" />
+            <evaluate
+                    expression="flowRequestContext.getActiveFlow().getApplicationContext().containsBean('shibboleth.CustomViewContext') ? flowRequestContext.getActiveFlow().getApplicationContext().getBean('shibboleth.CustomViewContext') : null"
+                    result="viewScope.custom" />
+        </on-entry>
+        <transition on="proceed" to="validate2ndFactor"/>
+    </view-state>
+
+    <action-state id="validate2ndFactor">
+        <evaluate expression="validate2ndFactor"/>
+        <evaluate expression="'proceed'"/>
+        <transition on="AccountError" to="displayG2fForm"/>
+        <transition on="InvalidCredentials" to="displayG2fForm"/>
+        <transition on="NoCredentials" to="displayG2fForm" />
+        <transition on="proceed" to="proceed"/>
+    </action-state>
+
+    <bean-import resource="g2f-authn-beans.xml" />
+
+</flow>

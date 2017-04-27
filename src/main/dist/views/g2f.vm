@@ -1,0 +1,36 @@
+#set ($errorMessage = $authenticationContext.getSubcontext('org.gtri.shibboleth.idp.g2f.authn.impl.G2fUserContext').getErrorMessage())
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>#springMessageText("idp.title", "Web Login Service")</title>
+    <link rel="stylesheet" type="text/css" href="$request.getContextPath()/css/main.css">
+    <!-- Generic 2nd Factor Shibboleth Implementation -->
+    <script>
+        <!-- TBD -->
+    </script>
+</head>
+<body>
+<div class="wrapper">
+    <div class="container">
+        <header>
+            <img src="$request.getContextPath()#springMessage("idp.logo")" alt="#springMessage("idp.logo.alt-text", "logo")">
+        </header>
+        <div class="content">
+            <div class="column one">
+                #parse("login-error.vm")
+                #if("$errorMessage" != "")
+                    <p class="form-element form-error">$encoder.encodeForHTML($errorMessage)</p>
+                #end
+                <p>Please type in your 2nd factor code:</p>
+                <form id="u2f_form" action="$flowExecutionUrl" method="POST">
+                    <input type="hidden" name="_eventId" value="proceed"/> <br>
+                    <input type="text" name="code" id="code"/> <br>
+                    <input type="submit" name="submit"/>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

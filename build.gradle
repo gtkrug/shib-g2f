@@ -1,0 +1,161 @@
+apply plugin: 'groovy'
+apply plugin: 'distribution'
+apply plugin: 'net.researchgate.release'
+apply plugin: 'maven'
+apply plugin: 'signing'
+apply plugin: 'idea'
+
+
+gradle.taskGraph.whenReady { taskGraph ->
+    if (taskGraph.allTasks.any { it instanceof Sign }) {
+        Console console = System.console()
+        def password = console.readPassword("PGP password: ")
+        allprojects { ext."signing.password" = password }
+        // Only sign releases
+        allprojects { ext.isReleaseVersion = !version.endsWith("SNAPSHOT") }
+    }
+}
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'net.researchgate:gradle-release:2.3.5'
+    }
+}
+
+configurations {
+    provided
+    compile.extendsFrom provided
+}
+
+repositories {
+    maven { url 'https://build.shibboleth.net/nexus/content/groups/public' }
+    jcenter()
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    compile "org.codehaus.groovy:groovy-all:${project.'groovy.version'}"
+    compile "org.apache.httpcomponents:httpclient:${project.'httpclient.version'}"
+
+    provided "javax.servlet:javax.servlet-api:${project.'javax-servlet.version'}"
+    provided "net.shibboleth.idp:idp-authn-api:${project.'shibboleth.version'}"
+    provided "net.shibboleth.idp:idp-authn-impl:${project.'shibboleth.version'}"
+    provided "net.shibboleth.idp:idp-session-api:${project.'shibboleth.version'}"
+    provided "net.shibboleth.idp:idp-profile-impl:${project.'shibboleth.version'}"
+    provided "net.shibboleth.idp:idp-attribute-api:${project.'shibboleth.version'}"
+    provided "net.shibboleth.idp:idp-attribute-resolver-api:${project.'shibboleth.version'}"
+    provided "net.shibboleth.idp:idp-attribute-resolver-spring:${project.'shibboleth.version'}"
+    provided "net.shibboleth.idp:idp-profile-api:${project.'shibboleth.version'}"
+    provided "net.shibboleth.utilities:java-support:${project.'java-support.version'}"
+    provided "org.opensaml:opensaml-profile-api:${project.'opensaml.version'}"
+    provided "org.springframework:spring-context:${project.'spring.version'}"
+    provided "org.springframework:spring-web:${project.'spring.version'}"
+    provided "org.springframework.webflow:spring-webflow:${project.'spring-webflow.version'}"
+
+
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+}
+
+distributions {
+    main {
+        contents {
+            duplicatesStrategy = 'exclude'
+            into ('docs') {
+                from (".") {
+                    include "README.md", "LICENSE"
+                }
+            }
+            /*from {
+                'src/main/resources'
+            }*/
+            into ('edit-webapp/WEB-INF/lib') {
+                from { project.jar }
+                from { (project.configurations.compile - project.configurations.provided )}
+            }
+        }
+    }
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from 'build/docs/javadoc'
+}
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allSource
+    classifier = 'sources'
+}
+
+artifacts {
+    archives jar
+    archives javadocJar
+    archives sourcesJar
+}
+
+configurations.archives.with {
+    artifacts.remove artifacts.find { it.archiveTask.is distZip }
+    artifacts.remove artifacts.find { it.archiveTask.is distTar }
+}
+
+signing {
+    required { isReleaseVersion && gradle.taskGraph.hasTask("uploadArchives") }
+    sign configurations.archives
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: hasProperty('ossrhUsername', null), password: hasProperty('ossrhPassword', null))
+            }
+
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                authentication(userName: hasProperty('ossrhUsername', null), password: hasProperty('ossrhPassword', null))
+            }
+
+            pom.project {
+                name 'shibboleth-mfa-u2f-auth'
+                groupId 'eu.stderr.shibboleth'
+                artifactId = 'shibboleth-mfa-u2f-auth'
+                packaging 'jar'
+                description 'U2F multifactor authentication plugin for Shibboleth IdPv3'
+                url 'https://github.com/Ratler/shibboleth-mfa-u2f-auth'
+
+                scm {
+                    connection 'scm:git:https://github.com/Ratler/shibboleth-mfa-u2f-auth'
+                    developerConnection 'scm:git:git@github.com/Ratler/shibboleth-mfa-u2f-auth.git'
+                    url 'https://github.com/Ratler/shibboleth-mfa-u2f-auth'
+                }
+
+                licenses {
+                    license {
+                        name 'The Apache License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'Ratler'
+                        name 'Stefan Wold'
+                        email 'ratler@stderr.eu'
+                    }
+                }
+            }
+        }
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = 2.10
+}
+
+String hasProperty(property, defaultProperty) {
+    return project.hasProperty(property) ? project.hasProperty(property) : defaultProperty
+}

@@ -1,0 +1,28 @@
+####################
+# General settings #
+####################
+
+## G2F Application Facets ) for more information
+g2f.appId=https://idp.example.org
+
+
+## Data store configuration - available data stores are, dummyDataStore and yubicoU2fValidationDataStore
+## Uncomment one of the data stores and it's configuration properties, update the empty properties where needed.
+
+#################################
+# dummyDataStore (testing only) #
+#################################
+# g2f.dataStore=dummyDataStore
+# g2f.dummyStore.keyHandle=
+# g2f.dummyStore.public=
+
+
+################################
+# realDataStore (tbd)          #
+################################
+# g2f.dataStore=realDataStore
+## URL to the G2Fval API
+# g2f.datastore.endPoint=
+## G2Fval HTTP Basic Authentication set the properties g2f.g2fval.username and g2f.g2fval.password
+# g2f.datastore.username=
+# g2f.datastore.password=
